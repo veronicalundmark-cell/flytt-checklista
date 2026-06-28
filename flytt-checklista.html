@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flytt­checklista</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F7F5F2; min-height: 100vh; padding-bottom: 40px; }
+
+  #header { background: #1C1C1E; color: #fff; padding: 28px 24px 20px; }
+  .header-inner { max-width: 600px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .progress-row { margin-top: 16px; display: flex; align-items: center; gap: 16px; }
+  .progress-track { flex: 1; background: #333; border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: #E07B54; border-radius: 4px; transition: width 0.4s ease; }
+  .progress-label { font-size: 13px; color: #aaa; white-space: nowrap; }
+  .days-left { margin-top: 10px; font-size: 13px; color: #aaa; }
+  .days-left.urgent { color: #E07B54; }
+
+  #tabs { background: #1C1C1E; border-top: 1px solid #2a2a2a; overflow-x: auto; }
+  .tabs-inner { max-width: 600px; margin: 0 auto; display: flex; padding: 0 12px; }
+  .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 10px;
+    cursor: pointer; font-size: 12px; white-space: nowrap; color: #888; transition: color 0.2s; display: flex; align-items: center; gap: 5px; }
+  .tab-btn.active { font-weight: 700; }
+
+  #content { max-width: 600px; margin: 0 auto; padding: 20px 16px 0; }
+  .phase-header { margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .phase-bar { width: 4px; height: 36px; border-radius: 2px; flex-shrink: 0; }
+  .phase-title { font-size: 18px; font-weight: 700; color: #1C1C1E; }
+  .phase-date { font-size: 12px; color: #888; margin-top: 2px; }
+
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task-row { display: flex; align-items: flex-start; gap: 10px; }
+  .task-card { flex: 1; display: flex; align-items: flex-start; gap: 14px; background: #fff;
+    border-radius: 12px; padding: 14px 16px; cursor: pointer;
+    border: 1.5px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: all 0.15s ease; }
+  .task-card.done { opacity: 0.7; }
+  .checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #ddd; background: transparent;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all 0.15s ease; }
+  .checkbox.checked { border-color: var(--phase-color); background: var(--phase-color); }
+  .checkbox svg { display: none; }
+  .checkbox.checked svg { display: block; }
+  .task-text { font-size: 15px; color: #1C1C1E; line-height: 1.4; }
+  .task-text.done { color: #999; text-decoration: line-through; }
+  .custom-tag { margin-left: 6px; font-size: 11px; font-weight: 600; }
+
+  .delete-btn { margin-top: 10px; width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid #eee;
+    background: #fff; cursor: pointer; font-size: 18px; color: #bbb; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .confirm-delete { display: flex; gap: 4px; align-items: center; padding-top: 10px; }
+  .btn-delete-confirm { padding: 6px 10px; border-radius: 8px; border: none; background: #e55; color: #fff; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .btn-cancel { padding: 6px 10px; border-radius: 8px; border: 1.5px solid #ddd; background: #fff; font-size: 12px; cursor: pointer; color: #555; }
+
+  .add-btn { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px;
+    border: 1.5px dashed; background: transparent; cursor: pointer; font-size: 14px; font-weight: 500; width: 100%; }
+  .add-btn .plus { font-size: 18px; line-height: 1; }
+
+  .add-input-row { background: #fff; border-radius: 12px; padding: 12px 14px; display: flex; gap: 8px; align-items: center; }
+  .add-input { flex: 1; border: none; outline: none; font-size: 15px; background: transparent; color: #1C1C1E; font-family: inherit; }
+  .btn-add { padding: 6px 14px; border-radius: 8px; border: none; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-cancel-input { padding: 6px 10px; border-radius: 8px; border: 1.5px solid #eee; background: #fff; font-size: 13px; cursor: pointer; color: #777; font-family: inherit; }
+
+  .phase-count { margin-top: 16px; text-align: center; font-size: 13px; color: #aaa; }
+
+  .nav-row { display: flex; gap: 12px; margin-top: 24px; }
+  .btn-prev { flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid #ddd; background: #fff; cursor: pointer; font-size: 14px; color: #555; font-family: inherit; }
+  .btn-next { flex: 1; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; color: #fff; font-family: inherit; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="header-inner">
+    <div class="eyebrow">Flytt · 1 augusti</div>
+    <h1>Flytt­checklista</h1>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+      <span class="progress-label" id="progress-label">0/0 klart</span>
+    </div>
+    <div class="days-left" id="days-left"></div>
+  </div>
+</div>
+
+<div id="tabs"><div class="tabs-inner" id="tabs-inner"></div></div>
+<div id="content"></div>
+
+<script>
+const MOVE_DATE = new Date("2025-08-01");
+const CHECKED_KEY = "flytt-checked";
+const CUSTOM_KEY = "flytt-custom";
+
+const PHASES = [
+  { id:"nu", label:"Nu direkt", dateRange:"v. 27–28 · Nu", color:"#E07B54",
+    tasks:[
+      {id:"t1",text:"Bestäm om flyttfirma eller egen transport"},
+      {id:"t2",text:"Boka flyttfirma (de är fullbokade på sommaren!)"},
+      {id:"t3",text:"Kontrollera uppsägningstid för nuvarande boende"},
+      {id:"t4",text:"Meddela Skatteverket om folkbokföring (digitalt)"},
+      {id:"t5",text:"Börja gå igenom saker – sälja, skänka eller kasta"},
+    ]},
+  { id:"treVeckor", label:"3–4 veckor före", dateRange:"v. 29–30 · 3–4 jul", color:"#5B8FA8",
+    tasks:[
+      {id:"t6",text:"Boka hyrbil om ni kör själva"},
+      {id:"t7",text:"Samla kartonger (matbutiker, Blocket, Facebook)"},
+      {id:"t8",text:"Packa saker som inte används dagligen"},
+      {id:"t9",text:"Fotografera elektronik och möbler för försäkringen"},
+      {id:"t10",text:"Kolla hemförsäkringen – uppdatera eller teckna ny"},
+    ]},
+  { id:"tvaVeckor", label:"2 veckor före", dateRange:"v. 31 · 18 jul", color:"#7A9E7E",
+    tasks:[
+      {id:"t11",text:"Adressändring via posten.se (ca 120 kr)"},
+      {id:"t12",text:"Meddela bank om ny adress"},
+      {id:"t13",text:"Meddela arbetsgivare/skola om ny adress"},
+      {id:"t14",text:"Meddela Försäkringskassan & CSN om ny adress"},
+      {id:"t15",text:"Avsluta/flytta el-abonnemang"},
+      {id:"t16",text:"Avsluta/flytta internetabonnemang"},
+      {id:"t17",text:"Säg upp tidningar och prenumerationer"},
+      {id:"t18",text:"Töm frysen inför flytten"},
+    ]},
+  { id:"veckanInnan", label:"Veckan innan", dateRange:"v. 31 · 25 jul", color:"#9B7BB8",
+    tasks:[
+      {id:"t19",text:"Packa det sista – märk alla kartonger (rum + innehåll)"},
+      {id:"t20",text:"Planera möbelplacering med hjälp av lägenhetsritning"},
+      {id:"t21",text:"Packa 'första-natten-lådan': lakan, handduk, laddare, toalettsaker, kaffe"},
+      {id:"t22",text:"Städa och fotografera nuvarande bostad"},
+      {id:"t23",text:"Bekräfta nycklar – när och hur de hämtas"},
+    ]},
+  { id:"inflyttning", label:"Inflyttningsdagen", dateRange:"1 aug 🎉", color:"#C4955A",
+    tasks:[
+      {id:"t24",text:"Hämta nycklarna"},
+      {id:"t25",text:"Gör besiktning och notera befintliga skador"},
+      {id:"t26",text:"Koppla in el och internet"},
+      {id:"t27",text:"Bär in och möblera"},
+      {id:"t28",text:"Kom ihåg att äta och ta hand om dig ♥"},
+    ]},
+  { id:"efter", label:"Efter inflyttning", dateRange:"v. 32+ · Augusti", color:"#888",
+    tasks:[
+      {id:"t29",text:"Lämna tillbaka gamla nycklarna i tid"},
+      {id:"t30",text:"Slutstäd gamla bostaden (eller boka städfirma)"},
+      {id:"t31",text:"Begär tillbaka depositionspengar"},
+      {id:"t32",text:"Montera, inreda, gör det till ett hem 🏡"},
+    ]},
+];
+
+let checked = {};
+let customTasks = {};
+let activePhase = "nu";
+let showInput = false;
+let deletingId = null;
+
+function load() {
+  try { checked = JSON.parse(localStorage.getItem(CHECKED_KEY)) || {}; } catch { checked = {}; }
+  try { customTasks = JSON.parse(localStorage.getItem(CUSTOM_KEY)) || {}; } catch { customTasks = {}; }
+}
+function save() {
+  localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify(customTasks));
+}
+
+function getDaysLeft() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.ceil((MOVE_DATE - today) / 86400000);
+}
+
+function allTasksForPhase(phaseId) {
+  const p = PHASES.find(p => p.id === phaseId);
+  return [...p.tasks, ...(customTasks[phaseId] || [])];
+}
+
+function renderHeader() {
+  const allTasks = PHASES.flatMap(p => allTasksForPhase(p.id));
+  const total = allTasks.length;
+  const done = allTasks.filter(t => checked[t.id]).length;
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+  document.getElementById("progress-bar").style.width = pct + "%";
+  document.getElementById("progress-label").textContent = done + "/" + total + " klart";
+  const dl = getDaysLeft();
+  const el = document.getElementById("days-left");
+  el.className = "days-left" + (dl <= 7 ? " urgent" : "");
+  el.textContent = dl > 0 ? dl + " dagar kvar till inflyttning" : dl === 0 ? "🎉 Det är inflyttningsdag idag!" : "Inflyttning passerad – kolla slutuppgifterna!";
+}
+
+function renderTabs() {
+  const container = document.getElementById("tabs-inner");
+  container.innerHTML = "";
+  PHASES.forEach(p => {
+    const tasks = allTasksForPhase(p.id);
+    const done = tasks.filter(t => checked[t.id]).length;
+    const complete = done === tasks.length;
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (p.id === activePhase ? " active" : "");
+    btn.style.color = p.id === activePhase ? p.color : complete ? "#555" : "#888";
+    btn.style.borderBottomColor = p.id === activePhase ? p.color : "transparent";
+    btn.innerHTML = (complete ? '<span style="font-size:10px">✓</span>' : "") + p.label;
+    btn.onclick = () => { activePhase = p.id; showInput = false; deletingId = null; render(); };
+    container.appendChild(btn);
+  });
+}
+
+function renderContent() {
+  const phase = PHASES.find(p => p.id === activePhase);
+  const tasks = allTasksForPhase(activePhase);
+  const doneTasks = tasks.filter(t => checked[t.id]).length;
+  const phaseIdx = PHASES.findIndex(p => p.id === activePhase);
+
+  let html = `
+    <div class="phase-header">
+      <div class="phase-bar" style="background:${phase.color}"></div>
+      <div><div class="phase-title">${phase.label}</div><div class="phase-date">${phase.dateRange}</div></div>
+    </div>
+    <div class="task-list" id="task-list">`;
+
+  tasks.forEach(task => {
+    const done = !!checked[task.id];
+    const isCustom = task.id.startsWith("custom-");
+    const isDeleting = deletingId === task.id;
+    html += `<div class="task-row" data-id="${task.id}">
+      <div class="task-card${done ? " done" : ""}" style="${done ? "border-color:"+phase.color+"22" : ""}" onclick="toggleTask('${task.id}')">
+        <div class="checkbox${done ? " checked" : ""}" style="--phase-color:${phase.color}">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="task-text${done ? " done" : ""}">${task.text}${isCustom ? `<span class="custom-tag" style="color:${phase.color}">eget</span>` : ""}</span>
+      </div>`;
+    if (isCustom) {
+      if (isDeleting) {
+        html += `<div class="confirm-delete">
+          <button class="btn-delete-confirm" onclick="confirmDelete('${task.id}')">Ta bort</button>
+          <button class="btn-cancel" onclick="cancelDelete()">Avbryt</button>
+        </div>`;
+      } else {
+        html += `<button class="delete-btn" onclick="startDelete('${task.id}')">×</button>`;
+      }
+    }
+    html += `</div>`;
+  });
+
+  if (showInput) {
+    html += `<div class="add-input-row" style="box-shadow:0 0 0 2px ${phase.color}55">
+      <input class="add-input" id="new-task-input" placeholder="Ny uppgift..." onkeydown="handleInputKey(event)">
+      <button class="btn-add" style="background:${phase.color}" onclick="addTask()">Lägg till</button>
+      <button class="btn-cancel-input" onclick="cancelInput()">Avbryt</button>
+    </div>`;
+  } else {
+    html += `<button class="add-btn" style="border-color:${phase.color}66; color:${phase.color}" onclick="openInput()">
+      <span class="plus">+</span> Lägg till egen uppgift
+    </button>`;
+  }
+
+  html += `</div>
+    <div class="phase-count">${doneTasks} av ${tasks.length} klara i den här fasen</div>
+    <div class="nav-row">`;
+
+  if (phaseIdx > 0) {
+    html += `<button class="btn-prev" onclick="goPhase(${phaseIdx-1})">← Föregående</button>`;
+  }
+  if (phaseIdx < PHASES.length - 1) {
+    html += `<button class="btn-next" style="background:${phase.color}" onclick="goPhase(${phaseIdx+1})">Nästa fas →</button>`;
+  }
+  html += `</div>`;
+
+  document.getElementById("content").innerHTML = html;
+
+  if (showInput) {
+    const inp = document.getElementById("new-task-input");
+    if (inp) inp.focus();
+  }
+}
+
+function render() {
+  renderHeader();
+  renderTabs();
+  renderContent();
+}
+
+function toggleTask(id) {
+  checked[id] = !checked[id];
+  save(); render();
+}
+function openInput() { showInput = true; render(); }
+function cancelInput() { showInput = false; render(); }
+function handleInputKey(e) {
+  if (e.key === "Enter") addTask();
+  if (e.key === "Escape") cancelInput();
+}
+function addTask() {
+  const inp = document.getElementById("new-task-input");
+  const text = inp ? inp.value.trim() : "";
+  if (!text) return;
+  const id = "custom-" + Date.now();
+  if (!customTasks[activePhase]) customTasks[activePhase] = [];
+  customTasks[activePhase].push({ id, text });
+  showInput = false;
+  save(); render();
+}
+function startDelete(id) { deletingId = id; render(); }
+function cancelDelete() { deletingId = null; render(); }
+function confirmDelete(id) {
+  customTasks[activePhase] = (customTasks[activePhase] || []).filter(t => t.id !== id);
+  delete checked[id];
+  deletingId = null;
+  save(); render();
+}
+function goPhase(idx) {
+  activePhase = PHASES[idx].id;
+  showInput = false; deletingId = null;
+  render();
+}
+
+load();
+render();
+</script>
+</body>
+</html>
